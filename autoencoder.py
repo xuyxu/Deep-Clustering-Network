@@ -23,20 +23,20 @@ class AutoEncoder(nn.Module):
         for idx, hidden_dim in enumerate(self.hidden_dims):
             if idx == 0:
                 layers.update(
-                    {'linear0': nn.Linear(self.input_dim, self.hidden_dims[0]),
+                    {'linear0': nn.Linear(self.input_dim, hidden_dim),
                      'activation0': nn.ReLU()
                     })
             elif idx == self.n_layers - 1:
                 layers.update(
                     {'linear{}'.format(idx): nn.Linear(
-                        self.hidden_dims[-1], self.output_dim)
+                        hidden_dim, self.output_dim)
                     })
             else:
                 layers.update(
                     {'linear{}'.format(idx): nn.Linear(
-                        self.hidden_dims[idx-1], self.hidden_dims[idx]),
+                        self.hidden_dims[idx-1], hidden_dim),
                      'activation{}'.format(idx): nn.ReLU(),
-                     # 'bn{}'.format(idx): nn.BatchNorm1d(self.hidden_dims[idx])
+                     'bn{}'.format(idx): nn.BatchNorm1d(self.hidden_dims[idx])
                     })
         
         self.model = nn.Sequential(layers)

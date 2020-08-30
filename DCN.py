@@ -22,9 +22,7 @@ class DCN(nn.Module):
     
     """ Compute the Equation (5) in the original paper on a data batch """
     def _loss(self, X, centroid_id):
-        
-        batch_size = X.size()[0]
-        
+
         rec_X = self.autoencoder(X)
         latent_X = self.autoencoder.latent_forward(X)
 
@@ -33,7 +31,7 @@ class DCN(nn.Module):
         
         # Regularization term on the clustering performance
         dist_loss = torch.tensor(0.).to(self.device)
-        for i in range(batch_size):
+        for i in range(X.size()[0]):
             centroid = torch.FloatTensor(
                 self.clustering.centroids[centroid_id[i]]).to(self.device)
             diff_vec = latent_X[i] - centroid
