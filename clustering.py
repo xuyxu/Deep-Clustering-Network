@@ -20,12 +20,12 @@ class Clustering(object):
         self.centroids = np.zeros((self.n_centroids, self.latent_dim))
         self.n_jobs = args.n_jobs
     
-    def _parallel_dist(self, X):
+    def _compute_dist(self, X):
         dis_mat = Parallel(n_jobs=self.n_jobs)(
             delayed(_parallel_compute_distance)(X, self.centroids[i])
             for i in range(self.n_centroids))
         dis_mat = np.hstack(dis_mat)
-    
+        
         return dis_mat
     
     def init_centroid(self, latent_X):
@@ -35,10 +35,16 @@ class Clustering(object):
     
     def update_centroid(self, latent_X, centroid_id):
         for i in range(self.n_centroids):
-            self.centroids[i] = np.mean(latent_X[centroid_id==i, :], axis=0)
+            mask = centroid_id == i
+
+            # Avoid empty slicing
+            if np.all(mask == False):
+                continue
+            
+            self.centroids[i] = np.mean(latent_X[mask, :], axis=0)
         
     def update_assign(self, latent_X):
-        dis_mat = self._parallel_dist(latent_X)
+        dis_mat = self._compute_dist(latent_X)
         
         return np.argmin(dis_mat, axis=1)
         
@@ -53,7 +59,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--n-centroids", type=int, default=3)
     parser.add_argument("--latent-dim", type=int, default=4)
-    parser.add_argument("--n-jobs", type=int, default=-1)
+    parser.add_argument("--n-jobs", type=int, default=1)
     args = parser.parse_args()
     
     model = Clustering(args)

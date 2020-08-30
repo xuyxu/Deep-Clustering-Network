@@ -23,8 +23,8 @@ class AutoEncoder(nn.Module):
         for idx, hidden_dim in enumerate(self.hidden_dims):
             if idx == 0:
                 layers.update(
-                    {'linear1': nn.Linear(self.input_dim, self.hidden_dims[0]),
-                     'activation1': nn.ReLU()
+                    {'linear0': nn.Linear(self.input_dim, self.hidden_dims[0]),
+                     'activation0': nn.ReLU()
                     })
             elif idx == self.n_layers - 1:
                 layers.update(
@@ -36,7 +36,7 @@ class AutoEncoder(nn.Module):
                     {'linear{}'.format(idx): nn.Linear(
                         self.hidden_dims[idx-1], self.hidden_dims[idx]),
                      'activation{}'.format(idx): nn.ReLU(),
-                     'bn{}'.format(idx): nn.BatchNorm1d(self.hidden_dims[idx])
+                     # 'bn{}'.format(idx): nn.BatchNorm1d(self.hidden_dims[idx])
                     })
         
         self.model = nn.Sequential(layers)
@@ -57,6 +57,10 @@ class AutoEncoder(nn.Module):
     def forward(self, X):
         return self.model(X)
 
+    """ Hook on collecting the latent output """
     def latent_forward(self, X):
-        pass
-
+        output = X
+        for module in self.model:
+            output = module(output)
+            if output.size()[1] == self.args.n_classes:
+                return output
