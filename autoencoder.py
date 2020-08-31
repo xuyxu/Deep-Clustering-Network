@@ -19,7 +19,7 @@ class AutoEncoder(nn.Module):
         assert self.n_layers % 2 > 0
         assert self.dims_list[self.n_layers // 2] == self.n_classes
         
-        # Encoder
+        # Encoder Network
         layers = OrderedDict()
         for idx, hidden_dim in enumerate(self.hidden_dims):
             if idx == 0:
@@ -36,7 +36,7 @@ class AutoEncoder(nn.Module):
                     })
         self.encoder = nn.Sequential(layers)
         
-        # Decoder
+        # Decoder Network
         layers = OrderedDict()
         tmp_hidden_dims = self.hidden_dims[::-1]
         for idx, hidden_dim in enumerate(tmp_hidden_dims):

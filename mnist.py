@@ -17,7 +17,7 @@ def evaluate(model, test_loader):
         latent_X = latent_X.detach().cpu().numpy()
 
         y_test.append(target.view(-1, 1).numpy())
-        y_pred.append(model.clustering.update_assign(latent_X).reshape(-1, 1))
+        y_pred.append(model.kmeans.update_assign(latent_X).reshape(-1, 1))
     
     y_test = np.vstack(y_test).reshape(-1)
     y_pred = np.vstack(y_pred).reshape(-1)
@@ -33,8 +33,8 @@ def solver(args, model, train_loader, test_loader):
         
         model.eval()
         score = evaluate(model, train_loader)
-        best = max(score, best)
         
+        best = max(score, best)
         print('\nEpoch: {:02d} | NMI: {:.3f} | Best: {:.3f}\n'.format(
             e, score, best))
 
@@ -58,8 +58,8 @@ if __name__ == '__main__':
                         help='weight decay (default: 5e-4)')
     parser.add_argument('--batch-size', type=int, default=256, 
                         help='input batch size for training')
-    parser.add_argument('--epoch', type=int, default=50, 
-                        help='number of epoch to train')
+    parser.add_argument('--epoch', type=int, default=100, 
+                        help='number of epochs to train')
     parser.add_argument('--pretrain', type=bool, default=True, 
                         help='whether use pre-training')
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
                         help='learning rate (default: 1e-4)')
     parser.add_argument('--latent_dim', type=int, default=10, 
                         help='latent space dimension')
-    parser.add_argument('--n-centroids', type=int, default=10, 
+    parser.add_argument('--n-clusters', type=int, default=10, 
                         help='number of centroids in the latent space')
 
     # Utility parameters
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(
         datasets.MNIST(args.dir, train=True, download=False, 
                        transform=transformer), 
-        batch_size=args.batch_size, shuffle=True)
+        batch_size=args.batch_size, shuffle=False)
     
     test_loader = torch.utils.data.DataLoader(
         datasets.MNIST(args.dir, train=False, transform=transformer), 
