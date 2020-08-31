@@ -15,23 +15,23 @@ class DCN(nn.Module):
         self.autoencoder = AutoEncoder(args).to(self.device)
         self.clustering = Clustering(args)
         self.lamda = args.lamda
-        self.criterion  = nn.MSELoss()
+        self.criterion  = nn.MSELoss(reduction='sum')
         self.optimizer = torch.optim.Adam(self.parameters(),
                                           lr=args.lr,
                                           weight_decay=args.wd)
     
     """ Compute the Equation (5) in the original paper on a data batch """
     def _loss(self, X, centroid_id):
-
+        batch_size = X.size()[0]
         rec_X = self.autoencoder(X)
-        latent_X = self.autoencoder.latent_forward(X)
+        latent_X = self.autoencoder(X, latent=True)
 
         # Reconstruction error
         rec_loss = self.criterion(X, rec_X)
         
         # Regularization term on the clustering performance
         dist_loss = torch.tensor(0.).to(self.device)
-        for i in range(X.size()[0]):
+        for i in range(batch_size):
             centroid = torch.FloatTensor(
                 self.clustering.centroids[centroid_id[i]]).to(self.device)
             diff_vec = latent_X[i] - centroid
@@ -43,7 +43,7 @@ class DCN(nn.Module):
                 rec_loss.detach().cpu().numpy(),
                 dist_loss.detach().cpu().numpy())
     
-    def pretrain(self, train_loader, epoch=10, verbose=True):
+    def pretrain(self, train_loader, epoch=100, verbose=True):
         
         if not self.args.pretrain:
             return
@@ -53,7 +53,7 @@ class DCN(nn.Module):
             raise ValueError(msg.format(epoch))
         
         if verbose:
-            print('======== Start pretraining ========')
+            print('========== Start pretraining ==========')
         
         self.train()
         for e in range(epoch):
@@ -73,18 +73,18 @@ class DCN(nn.Module):
                 self.optimizer.step()
         
         if verbose:
-            print('======== End pretraining ========\n')
+            print('========== End pretraining ==========\n')
         
         # Update centroids in self.clustering after pre-training
-        # TODO: Efficient initialization with reservoir sampling on batches
         self.eval()
         batch_X = []
         for batch_idx, (data, _) in enumerate(train_loader):
             batch_size = data.size()[0]
             data = data.to(self.device).view(batch_size, -1)
-            latent_output = self.autoencoder.latent_forward(data)
+            latent_output = self.autoencoder(data, latent=True)
             batch_X.append(latent_output.detach().cpu().numpy())
         batch_X = np.vstack(batch_X)
+        
         self.clustering.init_centroid(batch_X)
 
     def fit(self, epoch, train_loader, verbose=True):
@@ -94,7 +94,7 @@ class DCN(nn.Module):
             
             # Update assignment results and centroids in the clustering module
             with torch.no_grad():
-                latent_X = self.autoencoder.latent_forward(data)
+                latent_X = self.autoencoder(data, latent=True)
                 latent_X = latent_X.cpu().numpy()
                 assert latent_X.shape[1] == self.args.n_centroids
                 centroid_id = self.clustering.update_assign(latent_X)

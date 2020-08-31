@@ -28,9 +28,11 @@ class Clustering(object):
         
         return dis_mat
     
-    def init_centroid(self, latent_X):
+    def init_centroid(self, latent_X, indices=None):
         n_samples = latent_X.shape[0]
-        indices = np.random.choice(n_samples, self.n_centroids, replace=False)
+        if indices is None:
+            indices = np.random.choice(n_samples, self.n_centroids, 
+                                       replace=False)
         self.centroids += latent_X[indices, :]
     
     def update_centroid(self, latent_X, centroid_id):
