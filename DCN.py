@@ -14,7 +14,19 @@ class DCN(nn.Module):
         self.lamda = args.lamda
         self.device = torch.device('cuda' if args.cuda else 'cpu')
         
-        # Core modules
+        # Validation check
+        if not self.lamda > 0:
+            msg = '`The coefficient of regularization term `lambda` should' \
+                 'be greater than 0, but got value = {}.'
+            raise ValueError(msg.format(self.lamda))
+        
+        if not self.args.n_clusters == self.args.n_classes:
+            msg = '`args.n_clusters = {} should equal `args.n_classes={}`.'
+            raise ValueError(msg.format(self.args.n_clusters,
+                                        self.args.n_classes))
+        if len(self.args.hidden_dims) == 0:
+            raise ValueError('No hidden layer specified.')
+        
         self.kmeans = KMeans(args)
         self.autoencoder = AutoEncoder(args).to(self.device)
         
@@ -28,7 +40,7 @@ class DCN(nn.Module):
         batch_size = X.size()[0]
         rec_X = self.autoencoder(X)
         latent_X = self.autoencoder(X, latent=True)
-
+        
         # Reconstruction error
         rec_loss = self.criterion(X, rec_X)
         
@@ -90,38 +102,28 @@ class DCN(nn.Module):
 
     def fit(self, epoch, train_loader, verbose=True):
         
-        # [Step-1] Update the assignment results
-        cluster_id_list = []
-        with torch.no_grad():
-            for batch_idx, (data, _) in enumerate(train_loader):
-                batch_size = data.size()[0]
-                data = data.view(batch_size, -1).to(self.device)
-                latent_X = self.autoencoder(data, latent=True)
-                latent_X = latent_X.cpu().numpy()
-                cluster_id = self.kmeans.update_assign(latent_X)
-                cluster_id_list.append(cluster_id)
-        
-        # [Step-2] Update clusters in Kmeans module in an online fashion
         for batch_idx, (data, _) in enumerate(train_loader):
             batch_size = data.size()[0]
             data = data.view(batch_size, -1).to(self.device)
-            latent_X = self.autoencoder(data, latent=True)
-            latent_X = latent_X.detach().cpu().numpy()
-            elem_count = np.bincount(cluster_id_list[batch_idx],
-                                     minlength=self.args.n_clusters)
             
+            # Get the latent features
+            with torch.no_grad():
+                latent_X = self.autoencoder(data, latent=True)
+                latent_X = latent_X.cpu().numpy()
+            
+            # [Step-1] Update the assignment results
+            cluster_id = self.kmeans.update_assign(latent_X)
+        
+            # [Step-2] Update clusters in bath Kmeans
+            elem_count = np.bincount(cluster_id, 
+                                     minlength=self.args.n_clusters)
             for k in range(self.args.n_clusters):
                 if elem_count[k] == 0:
                     continue
-                self.kmeans.update_cluster(
-                    latent_X[cluster_id_list[batch_idx] == k], k)
+                self.kmeans.update_cluster(latent_X[cluster_id == k], k)
         
-        # [Step-3] Update the network parameters
-        for batch_idx, (data, _) in enumerate(train_loader):
-            batch_size = data.size()[0]
-            data = data.view(batch_size, -1).to(self.device)            
-            loss, rec_loss, dist_loss = self._loss(data, 
-                                                   cluster_id_list[batch_idx])
+            # [Step-3] Update the network parameters         
+            loss, rec_loss, dist_loss = self._loss(data, cluster_id)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -129,7 +131,7 @@ class DCN(nn.Module):
             if verbose and batch_idx % self.args.log_interval == 0:
                 msg = 'Epoch: {:02d} | Batch: {:03d} | Loss: {:.3f} | Rec-' \
                       'Loss: {:.3f} | Dist-Loss: {:.3f}'
-                print(msg.format(epoch, batch_idx,
+                print(msg.format(epoch, batch_idx, 
                                  loss.detach().cpu().numpy(),
                                  rec_loss, dist_loss))
         

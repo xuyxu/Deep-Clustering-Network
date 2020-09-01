@@ -17,6 +17,7 @@ class KMeans(object):
         self.n_features = args.latent_dim
         self.n_clusters = args.n_clusters
         self.clusters = np.zeros((self.n_clusters, self.n_features))
+        self.count = 100 * np.ones((self.n_clusters))  # serve as learning rate
         self.n_jobs = args.n_jobs
     
     def _compute_dist(self, X):
@@ -37,9 +38,12 @@ class KMeans(object):
     def update_cluster(self, X, cluster_idx):
         n_samples = X.shape[0]
         for i in range(n_samples):
-            diff = self.clusters[cluster_idx] - X[i]
-            self.clusters[cluster_idx] -= diff / n_samples
-        
+            self.count[cluster_idx] += 1
+            eta = 1.0 / self.count[cluster_idx]
+            updated_cluster = ((1 - eta) * self.clusters[cluster_idx] + 
+                               eta * X[i])
+            self.clusters[cluster_idx] = updated_cluster
+    
     def update_assign(self, X):
         dis_mat = self._compute_dist(X)
         

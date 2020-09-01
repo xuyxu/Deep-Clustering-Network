@@ -3,9 +3,9 @@ import argparse
 import numpy as np
 from dcn import DCN
 from torchvision import datasets, transforms
+from sklearn.metrics import adjusted_rand_score
 from sklearn.metrics import normalized_mutual_info_score
 
-best = float('-inf')
 
 def evaluate(model, test_loader):
     y_test = []
@@ -21,10 +21,10 @@ def evaluate(model, test_loader):
     
     y_test = np.vstack(y_test).reshape(-1)
     y_pred = np.vstack(y_pred).reshape(-1)
-    return normalized_mutual_info_score(y_test, y_pred)
+    return (normalized_mutual_info_score(y_test, y_pred),
+            adjusted_rand_score(y_test, y_pred))
 
 def solver(args, model, train_loader, test_loader):
-    global best
     model.pretrain(train_loader)
 
     for e in range(args.epoch):
@@ -32,11 +32,10 @@ def solver(args, model, train_loader, test_loader):
         model.fit(e, train_loader)
         
         model.eval()
-        score = evaluate(model, train_loader)
+        NMI, ARI = evaluate(model, train_loader)  # evaluation on the train_loader
         
-        best = max(score, best)
-        print('\nEpoch: {:02d} | NMI: {:.3f} | Best: {:.3f}\n'.format(
-            e, score, best))
+        print('\nEpoch: {:02d} | NMI: {:.3f} | ARI: {:.3f}\n'.format(
+            e, NMI, ARI))
 
 
 if __name__ == '__main__':
@@ -72,19 +71,13 @@ if __name__ == '__main__':
     parser.add_argument('--latent_dim', type=int, default=10, 
                         help='latent space dimension')
     parser.add_argument('--n-clusters', type=int, default=10, 
-                        help='number of centroids in the latent space')
+                        help='number of clusters in the latent space')
 
     # Utility parameters
-    parser.add_argument('--seed', type=int, default=0, 
-                        help='random seed')
     parser.add_argument('--n-jobs', type=int, default=1, 
                         help='number of jobs to run in parallel')
     parser.add_argument('--cuda', type=bool, default=True, 
                         help='whether to use GPU')
-    parser.add_argument('--evaluate', type=bool, default=True, 
-                        help='whether evaluate testing dataset')
-    parser.add_argument('--save', type=bool, default=True, 
-                        help='whether save model parameters and training logs')
     parser.add_argument('--log-interval', type=int, default=100, 
                         help='how many batches to wait before logging the ' \
                             'training status')
@@ -104,5 +97,6 @@ if __name__ == '__main__':
         datasets.MNIST(args.dir, train=False, transform=transformer), 
         batch_size=args.batch_size, shuffle=True)
 
+    # Main body
     model = DCN(args)    
     solver(args, model, train_loader, test_loader)
