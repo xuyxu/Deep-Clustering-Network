@@ -24,6 +24,7 @@ def evaluate(model, test_loader):
             adjusted_rand_score(y_test, y_pred))
 
 def solver(args, model, train_loader, test_loader):
+    
     rec_loss_list = model.pretrain(train_loader)
     nmi_list = []
     ari_list = []
@@ -33,7 +34,7 @@ def solver(args, model, train_loader, test_loader):
         model.fit(e, train_loader)
         
         model.eval()
-        NMI, ARI = evaluate(model, train_loader)  # evaluation on the train_loader
+        NMI, ARI = evaluate(model, test_loader)  # evaluation on the test_loader
         nmi_list.append(NMI)
         ari_list.append(ARI)
         
@@ -66,11 +67,11 @@ if __name__ == '__main__':
                         help='number of epochs to train')
     parser.add_argument('--pretrain', type=bool, default=True, 
                         help='whether use pre-training')
-
+    
     # Model parameters
     parser.add_argument('--lamda', type=float, default=1, 
                         help='coefficient of the reconstruction loss')
-    parser.add_argument('--beta', type=float, default=0.5, 
+    parser.add_argument('--beta', type=float, default=1, 
                         help='coefficient of the regularization term on ' \
                             'clustering')
     parser.add_argument('--hidden-dims', default=[500, 500, 2000, 10], 

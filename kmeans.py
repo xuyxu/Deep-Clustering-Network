@@ -32,7 +32,7 @@ class batch_KMeans(object):
     def init_cluster(self, X, indices=None):
         """ Generate initial clusters using sklearn.Kmeans """
         model = KMeans(n_clusters=self.n_clusters,
-                       n_init=10)
+                       n_init=20)
         model.fit(X)
         self.clusters = model.cluster_centers_  # copy clusters
     
