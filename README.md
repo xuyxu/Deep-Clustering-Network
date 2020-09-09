@@ -24,8 +24,5 @@ I trained the DCN model on MNIST dataset, hyper-parameters like network structur
 
 In my practice, this implementation also works fine on PyTorch 0.4.1. Feel free to open an issue if there were incompatibility problems.
 
-#### Known issues
-* Joblib does not adapt well with several IDEs (e.g., Spyder), please run `mnist.py` in the command line instead;
-
 #### Reference
 * Yang et al. ''Towards K-means-friendly Spaces: Simultaneous Deep Learning and Clustering'', ICML-2017 (https://arxiv.org/pdf/1610.04794.pdf)
