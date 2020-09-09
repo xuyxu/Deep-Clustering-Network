@@ -12,6 +12,8 @@ python mnist.py
 ```
 
 #### Experiment
+I trained the DCN model on MNIST dataset, hyper-parameters like network structure were set as values reported in the paper. The left figure presents the reconstruction error of the autoencoder during the pre-training stage, and the right figure presents changes on NMI and ARI (two metrics employed in the paper) during the training stage. The best NMI result I have got is around 0.65.
+
 ![MNIST Experiment Result](./mnist_exp.png)
 
 #### Package dependency
