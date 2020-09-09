@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.cluster import KMeans
 from joblib import Parallel, delayed
 
 
@@ -10,7 +11,7 @@ def _parallel_compute_distance(X, cluster):
     return dis_mat
 
 
-class KMeans(object):
+class batch_KMeans(object):
     
     def __init__(self, args):
         self.args = args
@@ -29,13 +30,14 @@ class KMeans(object):
         return dis_mat
     
     def init_cluster(self, X, indices=None):
-        n_samples = X.shape[0]
-        if indices is None:
-            indices = np.random.choice(n_samples, self.n_clusters, 
-                                       replace=False)
-        self.clusters += X[indices, :]
+        """ Generate initial clusters using sklearn.Kmeans """
+        model = KMeans(n_clusters=self.n_clusters,
+                       n_init=10)
+        model.fit(X)
+        self.clusters = model.cluster_centers_  # copy clusters
     
     def update_cluster(self, X, cluster_idx):
+        """ Update clusters in Kmeans on a batch of data """
         n_samples = X.shape[0]
         for i in range(n_samples):
             self.count[cluster_idx] += 1
@@ -45,6 +47,7 @@ class KMeans(object):
             self.clusters[cluster_idx] = updated_cluster
     
     def update_assign(self, X):
+        """ Assign samples in `X` to clusters """
         dis_mat = self._compute_dist(X)
         
         return np.argmin(dis_mat, axis=1)

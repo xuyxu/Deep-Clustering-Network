@@ -1,11 +1,10 @@
 import torch
 import argparse
 import numpy as np
-from dcn import DCN
+from DCN import DCN
 from torchvision import datasets, transforms
 from sklearn.metrics import adjusted_rand_score
 from sklearn.metrics import normalized_mutual_info_score
-
 
 def evaluate(model, test_loader):
     y_test = []
@@ -25,7 +24,9 @@ def evaluate(model, test_loader):
             adjusted_rand_score(y_test, y_pred))
 
 def solver(args, model, train_loader, test_loader):
-    model.pretrain(train_loader)
+    rec_loss_list = model.pretrain(train_loader)
+    nmi_list = []
+    ari_list = []
 
     for e in range(args.epoch):
         model.train()
@@ -33,9 +34,13 @@ def solver(args, model, train_loader, test_loader):
         
         model.eval()
         NMI, ARI = evaluate(model, train_loader)  # evaluation on the train_loader
+        nmi_list.append(NMI)
+        ari_list.append(ARI)
         
         print('\nEpoch: {:02d} | NMI: {:.3f} | ARI: {:.3f}\n'.format(
             e, NMI, ARI))
+
+    return rec_loss_list, nmi_list, ari_list
 
 
 if __name__ == '__main__':
@@ -64,6 +69,8 @@ if __name__ == '__main__':
 
     # Model parameters
     parser.add_argument('--lamda', type=float, default=1, 
+                        help='coefficient of the reconstruction loss')
+    parser.add_argument('--beta', type=float, default=0.5, 
                         help='coefficient of the regularization term on ' \
                             'clustering')
     parser.add_argument('--hidden-dims', default=[500, 500, 2000, 10], 
@@ -99,4 +106,5 @@ if __name__ == '__main__':
 
     # Main body
     model = DCN(args)    
-    solver(args, model, train_loader, test_loader)
+    rec_loss_list, nmi_list, ari_list = solver(
+        args, model, train_loader, test_loader)

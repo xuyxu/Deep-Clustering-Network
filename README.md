@@ -12,7 +12,7 @@ python mnist.py
 ```
 
 #### Experiment
-TBA.
+![MNIST Experiment Result](./mnist_exp.png)
 
 #### Package dependency
 * scikit-lean==0.23.1
