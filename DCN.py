@@ -24,11 +24,6 @@ class DCN(nn.Module):
             msg = 'lambda should be greater than 0 but got value = {}.'
             raise ValueError(msg.format(self.lamda))
 
-        if not self.args.n_clusters == self.args.n_classes:
-            msg = '`args.n_clusters = {} should equal `args.n_classes = {}`.'
-            raise ValueError(msg.format(self.args.n_clusters,
-                                        self.args.n_classes))
-
         if len(self.args.hidden_dims) == 0:
             raise ValueError('No hidden layer specified.')
 
