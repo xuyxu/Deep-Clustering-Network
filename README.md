@@ -11,6 +11,9 @@ Here I offer a demo on training DCN on the MNIST dataset (corresponding to Secti
 python mnist.py
 ```
 
+#### Acknowledgement
+For anyone with interests, you can also refer to the implementation of Günther Eder: https://github.com/guenthereder/Deep-Clustering-Network, which has more details on the reproducibility.
+
 #### Experiment
 I trained the DCN model on MNIST dataset, hyper-parameters like network structure were set as values reported in the paper. The left figure presents the reconstruction error of the autoencoder during the pre-training stage, and the right figure presents changes on NMI and ARI (two metrics employed in the paper) during the training stage. The best NMI result I have got is around 0.65.
 
